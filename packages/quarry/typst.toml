@@ -1,0 +1,12 @@
+[package]
+name = "quarry"
+version = "0.1.0"
+entrypoint = "lib.typ"
+authors = ["quarry contributors"]
+license = "Apache-2.0"
+description = "Compile-time SQL for Typst: query SQLite (and, via the sidecar, DuckDB/Postgres/MySQL) into typed values, formatted tables and chart-ready data — with an injected clock, seeded randomness, parameter binding and catchable errors"
+repository = "https://github.com/quarry-typst/quarry"
+keywords = ["sql", "sqlite", "database", "data", "report", "table"]
+categories = ["report", "visualization", "integration"]
+compiler = "0.13.0"
+exclude = ["examples"]

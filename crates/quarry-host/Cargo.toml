@@ -1,0 +1,14 @@
+[package]
+name = "quarry-host"
+description = "Test host replicating Typst's wasmi plugin semantics (snapshot/pool)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+wasmi = { workspace = true }
+anyhow = { workspace = true }
+ciborium = { workspace = true }
+quarry-engine = { path = "../quarry-engine" }

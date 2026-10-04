@@ -1,0 +1,63 @@
+# Release (F-22, fixing D-22): built from a tag, in CI, reproducibly — the
+# artifact is built TWICE on independent runners and the hashes must match.
+# No quarry binary is ever published that was not built by CI from a commit.
+name: release
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        attempt: [a, b]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: wasm32-wasip1
+      - run: ./tools/bootstrap.sh
+      - name: Reproducible build
+        run: |
+          export PATH="$HOME/.cargo/bin:$HOME/.local/quarry/bin:$PATH"
+          export WASI_SDK="$HOME/.local/quarry/opt/wasi-sdk"
+          export SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
+          ./tools/build_wasm.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm-${{ matrix.attempt }}
+          path: |
+            build/quarry-sqlite.wasm
+            build/quarry-sqlite.wasm.sha256
+
+  verify-and-publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+      - name: Assert both builds are byte-identical
+        run: |
+          diff wasm-a/quarry-sqlite.wasm.sha256 wasm-b/quarry-sqlite.wasm.sha256
+          sha256sum wasm-a/quarry-sqlite.wasm
+      - name: Build the quarry CLI (linux)
+        run: |
+          cargo build --release -p quarry-cli
+          cp target/release/quarry quarry-linux-x86_64
+      - name: Release notes carry the artifact hashes
+        run: |
+          {
+            echo "## Artifact hashes"
+            echo '```'
+            cat wasm-a/quarry-sqlite.wasm.sha256
+            sha256sum quarry-linux-x86_64
+            echo '```'
+          } > release-notes.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            wasm-a/quarry-sqlite.wasm
+            quarry-linux-x86_64

@@ -1,0 +1,79 @@
+# Nightly: extended fuzzing against malformed databases (F-28), big-database
+# soak (the D-11 ceiling probe at sizes too slow for PRs), and the ecosystem
+# drift watch — compile the test suite against the latest Typst release and
+# typst main (D-27).
+name: nightly
+on:
+  schedule:
+    - cron: "17 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: Swatinem/rust-cache@v2
+      - name: Install cargo-fuzz
+        run: cargo install cargo-fuzz --locked
+      - name: Fixtures
+        run: python3 tools/gen_fixtures.py && python3 tools/gen_corpus.py
+      - name: Fuzz (30 min per target, zero crashes required)
+        run: |
+          cd crates/quarry-fuzz
+          for target in fuzz_open fuzz_query fuzz_request; do
+            cargo +nightly fuzz run $target -- -max_total_time=1800 -rss_limit_mb=4096
+          done
+
+  soak:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+      - run: ./tools/bootstrap.sh
+      - name: 400 MB database soak (D-11 at scale)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          export WASI_SDK="$HOME/.local/quarry/opt/wasi-sdk"
+          ./tools/build_wasm.sh
+          python3 tools/gen_fixtures.py --big 400
+          cargo run --release -p quarry-host --bin phase0 -- --big 400
+
+  typst-drift:
+    # D-27: the incumbent silently fell a Typst release behind; this job makes
+    # drift a red build the day it lands.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        typst-ref: [latest-release, main]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+      - run: ./tools/bootstrap.sh
+      - name: Build typst ${{ matrix.typst-ref }}
+        run: |
+          if [ "${{ matrix.typst-ref }}" = "main" ]; then
+            cargo install --git https://github.com/typst/typst typst-cli --locked || \
+            cargo install --git https://github.com/typst/typst typst-cli
+          fi
+      - name: Document tests on ${{ matrix.typst-ref }}
+        run: |
+          export PATH="$HOME/.cargo/bin:$HOME/.local/quarry/bin:$PATH"
+          export WASI_SDK="$HOME/.local/quarry/opt/wasi-sdk"
+          ./tools/build_wasm.sh
+          cp build/quarry-sqlite.wasm packages/quarry/
+          if [ "${{ matrix.typst-ref }}" = "main" ]; then
+            TYPST_BIN="$HOME/.cargo/bin/typst" ./tools/run_typst_tests.sh
+          else
+            ./tools/run_typst_tests.sh
+          fi

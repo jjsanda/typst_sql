@@ -1,0 +1,50 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/quarry-engine",
+    "crates/quarry-plugin",
+    "crates/quarry-host",
+    "crates/quarry-difftest",
+    "crates/quarry-cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+repository = "https://github.com/quarry-typst/quarry"
+authors = ["quarry contributors"]
+
+[workspace.dependencies]
+ciborium = "0.2.2"
+ciborium-io = "0.2.2"
+blake3 = { version = "1.5", default-features = false }
+chacha20 = { version = "0.9", default-features = false }
+cc = "1.1"
+wasmi = { version = "=1.0.9", features = ["simd"] }
+anyhow = "1.0"
+proptest = "1.5"
+
+# The WASM plugin must be small and deterministic; the same profile is used
+# for reproducible release builds of every artifact.
+[profile.release]
+lto = true
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# Native test/dev builds want speed and unwinding.
+[profile.dev]
+panic = "unwind"
+
+# Native tools (CLI, difftest): thin LTO — fat LTO over the DataFusion graph
+# costs ~10 min per rebuild for no shipping benefit (the WASM artifact, where
+# size matters, keeps the full release profile).
+[profile.native-release]
+inherits = "release"
+opt-level = 3
+lto = "thin"
+codegen-units = 16
+panic = "unwind"
+strip = false

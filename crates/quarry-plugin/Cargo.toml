@@ -1,0 +1,15 @@
+[package]
+name = "quarry-plugin"
+description = "Typst WASM plugin exposing the quarry SQLite engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+quarry-engine = { path = "../quarry-engine" }
+ciborium = { workspace = true }

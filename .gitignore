@@ -1,0 +1,59 @@
+# ── Build output ─────────────────────────────────────────────────────────────
+/target
+/build
+# The WASM plugin is built by `just build-wasm` / CI (reproducibly, F-22) and
+# copied into the package tree; never committed.
+/packages/quarry/quarry-sqlite.wasm
+/packages/quarry/quarry-sqlite.wasm.sha256
+
+# ── cargo-fuzz ───────────────────────────────────────────────────────────────
+# crates/quarry-fuzz is a standalone crate (own [workspace]), so the root
+# /target rule does not reach its build dir. Same set `cargo fuzz init` ignores.
+# Its Cargo.lock stays tracked.
+/crates/quarry-fuzz/target
+/crates/quarry-fuzz/corpus
+/crates/quarry-fuzz/artifacts
+/crates/quarry-fuzz/coverage
+
+# ── Generated test data ──────────────────────────────────────────────────────
+# Deterministic, rebuilt by tools/gen_fixtures.py / tools/gen_corpus.py and
+# auto-invoked by the tests when missing.
+/tests/fixtures/generated
+/tests/corpus/corpus.sqlite
+/tests/corpus/queries.jsonl
+# `just test-golden` scratch; blessed reference PNGs live in tests/golden/ref.
+/tests/golden/out
+
+# ── Rendered documents ───────────────────────────────────────────────────────
+*.pdf
+!docs/**/*.pdf
+
+# ── Sidecar scratch at the repo root ─────────────────────────────────────────
+# Anchored on purpose: user projects COMMIT .quarry/ and quarry.lock (README),
+# so only dev runs of `quarry sync` in this checkout are ignored.
+/.quarry/cache
+/quarry.lock.orig
+
+# ── Python (tools/*.py) ──────────────────────────────────────────────────────
+__pycache__/
+
+# ── Secrets ──────────────────────────────────────────────────────────────────
+# Connection strings come from env:VAR / file:path references, never from
+# committed files (F-26); keep local credential files out of git.
+.env
+.env.*
+!.env.example
+
+# ── Editors / OS ─────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Claude Code ──────────────────────────────────────────────────────────────
+CLAUDE.md
+CLAUDE.local.md
+.claude/settings.local.json

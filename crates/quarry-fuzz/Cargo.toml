@@ -1,0 +1,35 @@
+# cargo-fuzz targets (F-28). Built with nightly via `cargo fuzz` — kept out of
+# the workspace so the stable-toolchain build never depends on libfuzzer.
+[package]
+name = "quarry-fuzz"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+ciborium = "0.2.2"
+quarry-engine = { path = "../quarry-engine" }
+
+[[bin]]
+name = "fuzz_open"
+path = "fuzz_targets/fuzz_open.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_query"
+path = "fuzz_targets/fuzz_query.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "fuzz_request"
+path = "fuzz_targets/fuzz_request.rs"
+test = false
+doc = false
+
+[workspace]

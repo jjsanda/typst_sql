@@ -1,0 +1,15 @@
+[package]
+name = "quarry-difftest"
+default-run = "quarry-difftest"
+description = "Differential test runner: native engine vs wasm-under-wasmi"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+quarry-engine = { path = "../quarry-engine" }
+quarry-host = { path = "../quarry-host" }
+ciborium = { workspace = true }
+anyhow = { workspace = true }

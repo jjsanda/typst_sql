@@ -1,0 +1,4 @@
+wasi_snapshot_preview1::environ_get
+wasi_snapshot_preview1::environ_sizes_get
+wasi_snapshot_preview1::fd_write
+wasi_snapshot_preview1::proc_exit

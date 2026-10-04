@@ -1,0 +1,19 @@
+[package]
+name = "quarry-engine"
+description = "Core SQLite engine for quarry: FFI, VFS, execution, CBOR envelope"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+ciborium = { workspace = true }
+blake3 = { workspace = true }
+chacha20 = { workspace = true }
+
+[build-dependencies]
+cc = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }

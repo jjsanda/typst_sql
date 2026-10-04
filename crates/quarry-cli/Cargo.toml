@@ -1,0 +1,40 @@
+[package]
+name = "quarry-cli"
+description = "quarry sidecar CLI: sync, cache, lockfile, remote sources"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "quarry"
+path = "src/main.rs"
+
+[features]
+default = ["analytics", "postgres-driver", "mysql-driver"]
+analytics = ["dep:datafusion", "dep:tokio"]
+postgres-driver = ["dep:postgres", "dep:tokio-postgres-rustls", "dep:rustls", "dep:webpki-roots"]
+mysql-driver = ["dep:mysql"]
+
+[dependencies]
+quarry-engine = { path = "../quarry-engine" }
+ciborium = { workspace = true }
+anyhow = { workspace = true }
+blake3 = { workspace = true }
+clap = { version = "4.5", features = ["derive"] }
+toml = "0.8"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+humantime = "2"
+
+datafusion = { version = "54", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread"], optional = true }
+
+postgres = { version = "0.19", optional = true, features = ["with-chrono-0_4"] }
+tokio-postgres-rustls = { version = "0.13", optional = true }
+rustls = { version = "0.23", optional = true }
+webpki-roots = { version = "0.26", optional = true }
+
+mysql = { version = "28", optional = true, default-features = false, features = ["minimal-rust", "rustls-tls-ring"] }

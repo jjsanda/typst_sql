@@ -1,0 +1,70 @@
+# PR gate (F-23, fixing D-23): build, unit, differential, regression, Typst
+# matrix, size budget, lints — on every push and pull request.
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  WASI_SDK_VERSION: "33"
+  TYPST_VERSIONS: "0.15.1"
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+          targets: wasm32-wasip1
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Bootstrap toolchain (wasi-sdk, typst, binaryen, wasi-stub, sqlite)
+        run: ./tools/bootstrap.sh
+      - name: Lints
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cargo fmt --check
+          cargo clippy --workspace --all-targets -- -D warnings
+      - name: Build WASM plugin (checks the WASI import allowlist)
+        run: |
+          export PATH="$HOME/.cargo/bin:$HOME/.local/quarry/bin:$PATH"
+          export WASI_SDK="$HOME/.local/quarry/opt/wasi-sdk"
+          ./tools/build_wasm.sh
+          cp build/quarry-sqlite.wasm packages/quarry/
+      - name: Size budget (F-24)
+        run: ./tools/check_size_budget.sh
+      - name: Unit + integration + regression tests
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cargo test --workspace --release
+      - name: Differential suite (≥500 queries, byte-identical)
+        run: |
+          export PATH="$HOME/.cargo/bin:$PATH"
+          cargo run --release -p quarry-difftest
+      - name: Typst document tests + golden comparison
+        run: |
+          export PATH="$HOME/.local/quarry/bin:$PATH"
+          ./tools/run_typst_tests.sh
+          ./tools/golden.sh check
+      - name: Typst version matrix (F-23)
+        if: matrix.os == 'ubuntu-latest'
+        run: ./tools/typst_matrix.sh
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.97.1
+      - uses: Swatinem/rust-cache@v2
+      # Native-engine tests only on Windows: the WASM artifact is
+      # platform-independent and built on Linux.
+      - name: Native engine tests
+        run: cargo test -p quarry-engine
